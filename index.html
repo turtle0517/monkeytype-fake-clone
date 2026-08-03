@@ -1,0 +1,1249 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>monkeytype</title>
+<style>
+  :root{
+    --bg-color: #323437;
+    --main-color: #e2b714;
+    --caret-color: #e2b714;
+    --sub-color: #646669;
+    --sub-alt-color: #2c2e31;
+    --text-color: #d1d0c5;
+    --error-color: #ca4754;
+    --error-extra-color: #7e2a33;
+    --colorful-error-color: #ca4754;
+    --colorful-error-extra-color: #7e2a33;
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  html,body{
+    height:100%;
+    background:var(--bg-color);
+    color:var(--text-color);
+    font-family:'Roboto Mono', 'Courier New', monospace;
+    overflow-x:hidden;
+    -webkit-font-smoothing:antialiased;
+  }
+  body{
+    display:flex;
+    flex-direction:column;
+    min-height:100vh;
+    padding:0 2vw;
+  }
+  ::selection{ background: var(--text-color); color: var(--bg-color); }
+
+  a{ color:inherit; text-decoration:none; }
+
+  /* ---------- TOP NAV ---------- */
+  header{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    padding:2rem 1rem 1rem 1rem;
+    max-width:1100px;
+    width:100%;
+    margin:0 auto;
+  }
+  .logo{
+    display:flex;
+    align-items:center;
+    gap:.6rem;
+    font-size:1.5rem;
+    font-weight:700;
+    color:var(--text-color);
+    letter-spacing:-0.5px;
+  }
+  .logo .accent{ color:var(--main-color); }
+  .logo svg{ width:26px; height:26px; fill:var(--main-color); }
+
+  nav.top-icons{
+    display:flex;
+    gap:1.4rem;
+    align-items:center;
+  }
+  nav.top-icons .icon-btn{
+    color:var(--sub-color);
+    font-size:1.05rem;
+    cursor:pointer;
+    transition:color .12s;
+    display:flex;
+    align-items:center;
+  }
+  nav.top-icons .icon-btn:hover{ color:var(--text-color); }
+  nav.top-icons svg{ width:19px; height:19px; fill:currentColor; }
+
+  /* ---------- CONFIG BAR ---------- */
+  .config-wrap{
+    max-width:1100px;
+    width:100%;
+    margin:1.2rem auto 0 auto;
+    display:flex;
+    justify-content:center;
+  }
+  .config-bar{
+    display:flex;
+    align-items:center;
+    gap:.25rem;
+    background:var(--sub-alt-color);
+    border-radius:6px;
+    padding:.55rem .8rem;
+    flex-wrap:wrap;
+    justify-content:center;
+    font-size:.82rem;
+    opacity:0;
+    transform:translateY(-6px);
+    animation:fadeDown .4s ease forwards .1s;
+  }
+  @keyframes fadeDown{ to{opacity:1; transform:translateY(0);} }
+  .config-group{
+    display:flex;
+    align-items:center;
+    gap:.15rem;
+    padding:0 .5rem;
+  }
+  .config-sep{
+    width:1px;
+    height:1.1rem;
+    background:var(--sub-color);
+    opacity:.4;
+    margin:0 .3rem;
+  }
+  .config-btn{
+    color:var(--sub-color);
+    background:transparent;
+    border:none;
+    cursor:pointer;
+    padding:.35rem .6rem;
+    border-radius:4px;
+    font-family:inherit;
+    font-size:.82rem;
+    transition:color .12s, background .12s;
+    display:flex;
+    align-items:center;
+    gap:.35rem;
+  }
+  .config-btn:hover{ color:var(--text-color); }
+  .config-btn.active{ color:var(--main-color); }
+  .config-btn svg{ width:13px; height:13px; fill:currentColor; }
+
+  /* ---------- MAIN TYPING AREA ---------- */
+  main{
+    flex:1;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;
+    max-width:1100px;
+    width:100%;
+    margin:0 auto;
+    position:relative;
+  }
+
+  .type-stage{
+    width:100%;
+    max-width:1000px;
+    position:relative;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+  }
+
+  .top-line{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    width:100%;
+    height:2.2rem;
+    color:var(--main-color);
+    font-size:1.15rem;
+    font-weight:600;
+    opacity:0;
+    transition:opacity .2s;
+  }
+  .top-line.visible{ opacity:1; }
+  .top-line .mode-icons{
+    color:var(--sub-color);
+    font-size:.95rem;
+    display:flex;
+    gap:.6rem;
+    align-items:center;
+  }
+
+  #liveStatsRow{
+    display:flex;
+    gap:1.6rem;
+    color:var(--sub-color);
+    font-size:1.05rem;
+    height:2.5rem;
+    align-items:center;
+    opacity:0;
+    transition:opacity .2s;
+    pointer-events:none;
+  }
+  #liveStatsRow.visible{ opacity:1; }
+  #liveStatsRow .stat-num{ color:var(--main-color); font-weight:700; }
+
+  #wordsWrapper{
+    width:100%;
+    position:relative;
+    margin-top:.5rem;
+    outline:none;
+    height:7.5rem;
+    overflow:hidden;
+  }
+  #words{
+    font-size:1.6rem;
+    line-height:2.5rem;
+    display:flex;
+    flex-wrap:wrap;
+    filter:blur(0);
+    transition:filter .25s, transform .2s ease;
+    user-select:none;
+    -webkit-user-select:none;
+    position:relative;
+    will-change:transform;
+  }
+  #words.blurred{ filter:blur(5px); }
+  .word{
+    display:flex;
+    margin:0 .55rem .5rem 0;
+  }
+  .letter{
+    color:var(--sub-color);
+  }
+  .letter.correct{ color:var(--text-color); }
+  .letter.incorrect{ color:var(--error-color); }
+
+  #caret{
+    position:absolute;
+    top:0;
+    left:0;
+    width:2px;
+    height:1.9rem;
+    background:var(--caret-color);
+    border-radius:1px;
+    animation:caretBlink 1s infinite;
+    transition:left .09s cubic-bezier(.35,.7,.4,1), top .09s cubic-bezier(.35,.7,.4,1);
+    pointer-events:none;
+  }
+  @keyframes caretBlink{
+    0%,50%{ opacity:1; }
+    51%,100%{ opacity:0; }
+  }
+  #wordsWrapper.no-blink #caret{ animation:none; opacity:1; }
+
+  #focusWarning{
+    position:absolute;
+    top:0; left:0; right:0; bottom:0;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    color:var(--sub-color);
+    font-size:1.1rem;
+    background:transparent;
+    cursor:text;
+    opacity:0;
+    pointer-events:none;
+    transition:opacity .2s;
+  }
+  #focusWarning.visible{ opacity:1; pointer-events:auto; }
+
+  #restartBtn{
+    margin-top:2.5rem;
+    color:var(--sub-color);
+    background:transparent;
+    border:none;
+    cursor:pointer;
+    font-size:1.3rem;
+    padding:.6rem;
+    border-radius:6px;
+    transition:color .12s, background .12s, transform .12s;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+  }
+  #restartBtn:hover{ color:var(--text-color); background:var(--sub-alt-color); }
+  #restartBtn:active{ transform:scale(.92); }
+  #restartBtn svg{ width:20px; height:20px; fill:currentColor; }
+
+  /* ---------- RESULTS SCREEN ---------- */
+  #resultsScreen{
+    display:none;
+    width:100%;
+    max-width:1000px;
+    margin:0 auto;
+    flex-direction:row;
+    gap:2.5rem;
+    align-items:stretch;
+    opacity:0;
+    transition:opacity .3s;
+  }
+  #resultsScreen.visible{ display:flex; opacity:1; }
+
+  .results-left{
+    display:flex;
+    flex-direction:column;
+    gap:1.4rem;
+    min-width:170px;
+  }
+  .result-block{ display:flex; flex-direction:column; }
+  .result-block .label{
+    color:var(--main-color);
+    font-size:.95rem;
+    margin-bottom:.15rem;
+  }
+  .result-block .value{
+    font-size:4rem;
+    line-height:1;
+    color:var(--text-color);
+    font-weight:400;
+  }
+  .result-block.small .value{ font-size:2.2rem; }
+  .result-block.small .label{ font-size:.85rem; }
+
+  .results-right{
+    flex:1;
+    display:flex;
+    flex-direction:column;
+    gap:1rem;
+  }
+  #wpmChart{
+    width:100%;
+    height:220px;
+    background:var(--sub-alt-color);
+    border-radius:6px;
+  }
+
+  .results-meta{
+    display:flex;
+    flex-wrap:wrap;
+    gap:2.2rem;
+    color:var(--sub-color);
+    font-size:.85rem;
+  }
+  .results-meta .m-block .m-label{ color:var(--sub-color); font-size:.78rem; }
+  .results-meta .m-block .m-value{ color:var(--text-color); font-size:1rem; margin-top:.1rem; }
+
+  .results-actions{
+    display:flex;
+    gap:.6rem;
+    margin-top:.4rem;
+  }
+  .results-actions button{
+    background:var(--sub-alt-color);
+    color:var(--sub-color);
+    border:none;
+    padding:.7rem .9rem;
+    border-radius:6px;
+    cursor:pointer;
+    font-size:1rem;
+    display:flex;
+    align-items:center;
+    gap:.5rem;
+    transition:color .12s, background .12s;
+  }
+  .results-actions button:hover{ color:var(--bg-color); background:var(--main-color); }
+  .results-actions svg{ width:16px; height:16px; fill:currentColor; }
+
+  /* ---------- FOOTER ---------- */
+  footer{
+    max-width:1100px;
+    width:100%;
+    margin:0 auto;
+    padding:1.2rem 1rem 1.6rem 1rem;
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    color:var(--sub-color);
+    font-size:.8rem;
+  }
+  footer .foot-left{ display:flex; align-items:center; gap:.4rem; }
+  footer .foot-key{
+    background:var(--sub-alt-color);
+    color:var(--text-color);
+    padding:.15rem .45rem;
+    border-radius:4px;
+    font-size:.72rem;
+  }
+  footer .foot-links{ display:flex; gap:1.1rem; }
+  footer .foot-links a:hover{ color:var(--text-color); }
+
+  @media (max-width:760px){
+    #words{ font-size:1.25rem; line-height:2.1rem; }
+    #wordsWrapper{ height:6.3rem; }
+    header{ padding:1.2rem .5rem .5rem .5rem; }
+    .logo{ font-size:1.2rem; }
+    #resultsScreen{ flex-direction:column; }
+    .result-block .value{ font-size:3rem; }
+    footer{ flex-direction:column; gap:.6rem; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">
+    <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8z"/><circle cx="8.5" cy="10.5" r="1.5"/><circle cx="15.5" cy="10.5" r="1.5"/><path d="M8 15c.83 1.2 2.24 2 4 2s3.17-.8 4-2H8z"/></svg>
+    monkey<span class="accent">type</span>
+  </div>
+  <nav class="top-icons">
+    <div class="icon-btn" title="account"><svg viewBox="0 0 24 24"><path d="M12 12c2.7 0 4.9-2.2 4.9-4.9S14.7 2.2 12 2.2 7.1 4.4 7.1 7.1 9.3 12 12 12zm0 2.5c-3.3 0-9.8 1.6-9.8 4.9V22h19.6v-2.6c0-3.3-6.5-4.9-9.8-4.9z"/></svg></div>
+  </nav>
+</header>
+
+<div class="config-wrap">
+  <div class="config-bar" id="configBar">
+    <div class="config-group">
+      <button class="config-btn" data-mode="punctuation" id="punctBtn">@ punctuation</button>
+      <button class="config-btn" data-mode="numbers" id="numBtn">
+        <svg viewBox="0 0 24 24"><path d="M4 9h16v2H4zm0 4h16v2H4z"/></svg>
+        numbers
+      </button>
+    </div>
+    <div class="config-sep"></div>
+    <div class="config-group" id="difficultyGroup">
+      <button class="config-btn active" data-difficulty="easy">easy</button>
+      <button class="config-btn" data-difficulty="hard">hard</button>
+      <button class="config-btn" data-difficulty="extreme">extreme</button>
+    </div>
+    <div class="config-sep"></div>
+    <div class="config-group">
+      <button class="config-btn active" data-testtype="time">time</button>
+      <button class="config-btn" data-testtype="words">words</button>
+      <button class="config-btn" data-testtype="quote">quote</button>
+      <button class="config-btn" data-testtype="zen">zen</button>
+    </div>
+    <div class="config-sep"></div>
+    <div class="config-group" id="amountGroup">
+      <button class="config-btn" data-amount="15">15</button>
+      <button class="config-btn active" data-amount="30">30</button>
+      <button class="config-btn" data-amount="60">60</button>
+      <button class="config-btn" data-amount="120">120</button>
+    </div>
+  </div>
+</div>
+
+<main>
+  <div class="type-stage" id="typeStage">
+    <div class="top-line" id="topLine">
+      <span id="timerDisplay">30</span>
+      <span class="mode-icons">english 1k</span>
+    </div>
+
+    <div id="wordsWrapper" tabindex="0">
+      <div id="words"></div>
+      <div id="caret"></div>
+      <div id="focusWarning">click here or press any key to focus</div>
+    </div>
+
+    <button id="restartBtn" title="restart test">
+      <svg viewBox="0 0 24 24"><path d="M17.65 6.35A7.958 7.958 0 0 0 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08a5.99 5.99 0 0 1-5.65 4c-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/></svg>
+    </button>
+  </div>
+
+  <div id="resultsScreen">
+    <div class="results-left">
+      <div class="result-block">
+        <div class="label">wpm</div>
+        <div class="value" id="resWpm">0</div>
+      </div>
+      <div class="result-block">
+        <div class="label">acc</div>
+        <div class="value" id="resAcc">100%</div>
+      </div>
+      <div class="result-block small">
+        <div class="label">test type</div>
+        <div class="value" id="resTestType" style="font-size:1.3rem;">time 30<br>english 1k</div>
+      </div>
+      <div class="result-block small">
+        <div class="label">raw</div>
+        <div class="value" id="resRaw">0</div>
+      </div>
+      <div class="result-block small">
+        <div class="label">characters</div>
+        <div class="value" id="resChars">0/0/0/0</div>
+      </div>
+      <div class="result-block small">
+        <div class="label">consistency</div>
+        <div class="value" id="resConsistency">0%</div>
+      </div>
+      <div class="result-block small">
+        <div class="label">time</div>
+        <div class="value" id="resTime">30s</div>
+      </div>
+    </div>
+    <div class="results-right">
+      <canvas id="wpmChart"></canvas>
+      <div class="results-actions">
+        <button id="nextTestBtn">
+          <svg viewBox="0 0 24 24"><path d="M17.65 6.35A7.958 7.958 0 0 0 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08a5.99 5.99 0 0 1-5.65 4c-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/></svg>
+          next test
+        </button>
+      </div>
+    </div>
+  </div>
+</main>
+
+<footer>
+  <div class="foot-left">
+    made with <span style="color:var(--error-color)">♥</span> for typing
+  </div>
+  <div class="foot-links">
+    <a href="#">support</a>
+    <a href="#">discord</a>
+    <a href="#">terms</a>
+    <a href="#">security</a>
+    <a href="#">privacy</a>
+  </div>
+</footer>
+
+<script>
+(function(){
+  "use strict";
+
+  // ============ WORD LIST ============
+  const WORD_LIST = ["the","be","to","of","and","a","in","that","have","I","it","for","not","on","with","he","as","you","do","at",
+  "this","but","his","by","from","they","we","say","her","she","or","an","will","my","one","all","would","there","their","what",
+  "so","up","out","if","about","who","get","which","go","me","when","make","can","like","time","no","just","him","know","take",
+  "people","into","year","your","good","some","could","them","see","other","than","then","now","look","only","come","its","over",
+  "think","also","back","after","use","two","how","our","work","first","well","way","even","new","want","because","any","these",
+  "give","day","most","us","water","light","earth","house","hand","world","tree","school","story","point","place","area","case",
+  "system","program","question","government","company","number","group","problem","fact","music","language","control","power",
+  "hour","game","line","end","member","law","car","city","community","name","president","team","minute","idea","body","information",
+  "back","parent","face","others","level","office","door","health","person","art","war","history","party","result","change",
+  "morning","reason","research","girl","guy","moment","air","teacher","force","education","foot","boy","age","policy","process",
+  "music","market","sense","nation","plan","college","interest","death","experience","effect","use","study","report","decision",
+  "book","eye","job","word","business","issue","side","kind","head","house","service","friend","father","power","hour","game",
+  "line","end","member","law","car","city","community","name","president","team","minute","idea","kitchen","paper","space",
+  "step","child","move","order","water","room","mother","area","money","story","fact","month","lot","right","study","book",
+  "eye","job","word","though","business","issue","side","kind","four","head","far","black","long","both","little","house",
+  "yes","after","since","long","provide","service","around","friend","important","father","sit","away","until","power","hour",
+  "game","often","yet","line","political","end","among","ever","stand","bad","lose","however","member","pay","law","meet",
+  "car","city","almost","include","continue","set","later","community","much","name","five","president","team","minute",
+  "idea","kitchen","eat","let","result","remain","hand","large","early","seem","country","possible","become","leave"];
+
+  function buildWordStream(count, punctuation, numbers){
+    const arr = [];
+    for(let i=0;i<count;i++){
+      let w = WORD_LIST[Math.floor(Math.random()*WORD_LIST.length)];
+      if (numbers && Math.random() < 0.06){
+        w = String(Math.floor(Math.random()*9000)+10);
+      } else if (punctuation){
+        const r = Math.random();
+        if (r < 0.10){ w = w + ","; }
+        else if (r < 0.14){ w = w + "."; }
+        else if (r < 0.155){ w = w + "?"; }
+        else if (r < 0.17 && i < count-1){ w = w + ";"; }
+        else if (r < 0.185){ w = '"' + w + '"'; }
+      }
+      arr.push(w);
+    }
+    return arr;
+  }
+
+  // ============ STATE ============
+  let config = {
+    testType: 'time',   // time | words | quote | zen
+    amount: 30,          // seconds for time, word count for words
+    punctuation: false,
+    numbers: false,
+    difficulty: 'easy'   // easy | hard
+  };
+
+  let words = [];               // array of target word strings
+  let typedWords = [];          // array of what user "typed" (always == target, we fabricate)
+  let currentWordIndex = 0;
+  let currentLetterIndex = 0;
+  let started = false;
+  let finished = false;
+  let startTime = null;
+  let timerInterval = null;
+  let timeRemaining = config.amount;
+  let totalKeystrokes = 0;      // real keydown count from user
+  let correctChars = 0;
+  let incorrectChars = 0;       // fabricated mistakes made (hard mode)
+  let wpmHistory = [];          // {time, wpm, raw}
+  let rawHistory = [];
+  let lastSampleSecond = -1;
+  let elapsedForWordsMode = 0;
+  let wordsModeTimer = null;
+
+  // Hard-mode mistake state: tracks a pending fabricated wrong letter
+  // sitting in the current word that the user can backspace + retype.
+  // Multiple fabricated typos can be pending at once (one per word can go unfixed while
+  // another shows up further along), so track them all in a map keyed by "wordIndex:letterIndex".
+  const pendingMistakes = new Map();
+  function mistakeKey(wordIndex, letterIndex){ return wordIndex + ':' + letterIndex; }
+
+  const wordsEl = document.getElementById('words');
+  const wordsWrapper = document.getElementById('wordsWrapper');
+  const caretEl = document.getElementById('caret');
+  const timerDisplay = document.getElementById('timerDisplay');
+  const topLine = document.getElementById('topLine');
+  const focusWarning = document.getElementById('focusWarning');
+  const resultsScreen = document.getElementById('resultsScreen');
+  const typeStage = document.getElementById('typeStage');
+  const restartBtn = document.getElementById('restartBtn');
+  const nextTestBtn = document.getElementById('nextTestBtn');
+
+  const MISTAKE_CHARS = "abcdefghijklmnopqrstuvwxyz";
+  // Rough qwerty neighbor map so fabricated typos look like plausible fat-finger slips
+  // rather than pure random letters.
+  const QWERTY_NEIGHBORS = {
+    a:"qwsz", b:"vghn", c:"xdfv", d:"serfcx", e:"wsdr", f:"drtgvc", g:"ftyhbv",
+    h:"gyujnb", i:"ujko", j:"huiknm", k:"jiolm", l:"kop", m:"njk", n:"bhjm",
+    o:"iklp", p:"ol", q:"wa", r:"edft", s:"awedxz", t:"rfgy", u:"yhji",
+    v:"cfgb", w:"qaes", x:"zsdc", y:"tghu", z:"asx"
+  };
+  function randomWrongChar(correctChar){
+    const lower = correctChar.toLowerCase();
+    const neighbors = QWERTY_NEIGHBORS[lower];
+    if (neighbors && Math.random() < 0.7){
+      return neighbors[Math.floor(Math.random()*neighbors.length)];
+    }
+    let c;
+    do{
+      c = MISTAKE_CHARS[Math.floor(Math.random()*MISTAKE_CHARS.length)];
+    } while(c === lower);
+    return c;
+  }
+
+  // Chance (per keystroke, when no mistake is pending) that a fabricated typo occurs,
+  // keyed by difficulty.
+  const MISTAKE_CHANCE = { easy: 0, hard: 0.07, extreme: 0.16 };
+
+  // The different flavors of typo a "hard"/"extreme" run can fabricate:
+  // - wrong: substitutes a nearby-key wrong letter for the correct one
+  // - double: types the correct letter twice (an extra duplicate keystroke)
+  // - swap: types the next letter early (transposition-style slip), correct letter still pending
+  // extreme mode can roll any of the three; hard mode is mostly simple wrong-letter slips
+  // with a smaller chance of the other types, giving hard less variety than extreme.
+  function pickMistakeType(){
+    if (config.difficulty === 'extreme'){
+      const r = Math.random();
+      if (r < 0.45) return 'wrong';
+      if (r < 0.75) return 'double';
+      return 'swap';
+    }
+    // hard
+    const r = Math.random();
+    if (r < 0.75) return 'wrong';
+    if (r < 0.92) return 'double';
+    return 'swap';
+  }
+
+  // ============ WORD RENDERING ============
+  function renderWords(){
+    wordsEl.innerHTML = '';
+    words.forEach((w, wi) => {
+      const wordDiv = document.createElement('div');
+      wordDiv.className = 'word';
+      wordDiv.dataset.index = wi;
+      [...w].forEach((ch, ci) => {
+        const span = document.createElement('span');
+        span.className = 'letter';
+        span.textContent = ch;
+        span.dataset.wordIndex = wi;
+        span.dataset.letterIndex = ci;
+        wordDiv.appendChild(span);
+      });
+      wordsEl.appendChild(wordDiv);
+    });
+    // add trailing invisible space marker not needed; spaces are via margin between .word
+    requestAnimationFrame(positionCaret);
+  }
+
+  function getLetterEl(wordIndex, letterIndex){
+    const wordDiv = wordsEl.children[wordIndex];
+    if (!wordDiv) return null;
+    if (letterIndex >= wordDiv.children.length) return null;
+    return wordDiv.children[letterIndex];
+  }
+
+  function offsetRelativeTo(el, ancestor){
+    let left = 0, top = 0;
+    let node = el;
+    while (node && node !== ancestor){
+      left += node.offsetLeft;
+      top += node.offsetTop;
+      node = node.offsetParent;
+    }
+    return { left, top };
+  }
+
+  function positionCaret(){
+    let target = getLetterEl(currentWordIndex, currentLetterIndex);
+    let left, top;
+    if (target){
+      const pos = offsetRelativeTo(target, wordsEl);
+      left = pos.left;
+      top = pos.top;
+    } else {
+      const wordDiv = wordsEl.children[currentWordIndex];
+      if (wordDiv && wordDiv.lastElementChild){
+        const lastLetter = wordDiv.lastElementChild;
+        const pos = offsetRelativeTo(lastLetter, wordsEl);
+        left = pos.left + lastLetter.offsetWidth;
+        top = pos.top;
+      } else {
+        left = 0; top = 0;
+      }
+    }
+
+    handleLineScroll(top);
+
+    caretEl.style.left = left + 'px';
+    caretEl.style.top = (top + scrollShiftPx) + 'px';
+  }
+
+  let lineHeight = null;
+  let scrollShiftPx = 0;
+  function handleLineScroll(caretTop){
+    if (!lineHeight){
+      const cs = getComputedStyle(wordsEl);
+      lineHeight = parseFloat(cs.lineHeight) || 40;
+    }
+    const visibleLines = 3;
+    const maxTop = lineHeight * (visibleLines - 1);
+    // Shift content so the caret's line never renders past the last visible line.
+    const desiredShift = Math.max(0, caretTop - maxTop);
+    // Snap to whole line increments so text doesn't clip mid-line.
+    const snappedShift = Math.round(desiredShift / lineHeight) * lineHeight;
+    if (snappedShift !== scrollShiftPx){
+      scrollShiftPx = snappedShift;
+      wordsEl.style.transform = `translateY(-${scrollShiftPx}px)`;
+    }
+  }
+
+  // ============ TIMER / TOP LINE ============
+  function updateTopLineDisplay(){
+    if (config.testType === 'time'){
+      timerDisplay.textContent = Math.max(0, Math.ceil(timeRemaining));
+    } else if (config.testType === 'words'){
+      timerDisplay.textContent = `${currentWordIndex}/${words.length}`;
+    } else {
+      timerDisplay.textContent = '';
+    }
+  }
+
+  // ============ WPM CALC (based on real elapsed time & fabricated perfect typing) ============
+  function charsTypedSoFar(){
+    // total chars including spaces up to current position, all "correct"
+    let count = 0;
+    for(let i=0;i<currentWordIndex;i++){
+      count += words[i].length + 1; // +1 for space
+    }
+    count += currentLetterIndex;
+    return count;
+  }
+
+  function computeLiveWpm(){
+    if (!startTime) return 0;
+    const elapsedMin = (Date.now() - startTime) / 60000;
+    if (elapsedMin <= 0) return 0;
+    const chars = charsTypedSoFar();
+    const wordsCount = chars / 5;
+    return Math.round(wordsCount / elapsedMin);
+  }
+
+  // ============ INPUT HANDLING (fabrication engine) ============
+  // Every keydown is treated as a "correct" press advancing our fabricated typed text,
+  // regardless of what key was actually pressed (except functional keys we ignore).
+  const IGNORED_KEYS = new Set(['Shift','Control','Alt','Meta','CapsLock','Escape',
+    'ArrowUp','ArrowDown','ArrowLeft','ArrowRight','F1','F2','F3','F4','F5','F6','F7','F8',
+    'F9','F10','F11','F12','Home','End','PageUp','PageDown','Insert','Delete','ContextMenu']);
+
+  function clearPendingMistakeAt(wordIndex, letterIndex){
+    const key = mistakeKey(wordIndex, letterIndex);
+    if (!pendingMistakes.has(key)) return;
+    const wordDiv = wordsEl.children[wordIndex];
+    const el = wordDiv ? wordDiv.children[letterIndex] : null;
+    if (el){
+      el.classList.remove('incorrect', 'correct');
+    }
+    pendingMistakes.delete(key);
+  }
+
+  function clearAllPendingMistakesInWord(wordIndex){
+    [...pendingMistakes.keys()].forEach(key=>{
+      const m = pendingMistakes.get(key);
+      if (m.wordIndex === wordIndex) clearPendingMistakeAt(m.wordIndex, m.letterIndex);
+    });
+  }
+
+  function handleBackspace(wholeWord){
+    if (currentWordIndex === 0 && currentLetterIndex === 0) return;
+
+    // If there's a pending fabricated mistake right behind the caret, clear it on backspace.
+    clearPendingMistakeAt(currentWordIndex, currentLetterIndex - 1);
+
+    if (wholeWord){
+      // Ctrl/Cmd+Backspace can jump straight past any pending mistakes without ever landing
+      // on their exact index above, so make sure they all get cleared here too - instead of
+      // leaving orphaned red letters with no tracker pointing at them. If the caret is already
+      // at the very start of the current word (nothing typed here yet), the word actually being
+      // erased is the previous one, so target that word's mistakes instead.
+      const wordBeingErased = (currentLetterIndex === 0 && currentWordIndex > 0) ? currentWordIndex - 1 : currentWordIndex;
+      clearAllPendingMistakesInWord(wordBeingErased);
+      if (currentLetterIndex === 0 && currentWordIndex > 0){
+        currentWordIndex--;
+        currentLetterIndex = 0;
+      } else {
+        currentLetterIndex = 0;
+      }
+    } else {
+      if (currentLetterIndex > 0){
+        currentLetterIndex--;
+      } else if (currentWordIndex > 0){
+        currentWordIndex--;
+        currentLetterIndex = words[currentWordIndex].length;
+      }
+    }
+    refreshLetterClasses();
+    positionCaret();
+  }
+
+  let atWordEnd = false;
+  function advanceOneCharV2(){
+    if (!started) startTest();
+    totalKeystrokes++;
+
+    if (atWordEnd){
+      // this keystroke (space, or any key) moves us to next word
+      // Keep any fabricated typo tracked even after leaving its word - it should stay
+      // visibly red until the user actually backspaces back onto it, not silently
+      // resolve itself just because we moved on.
+      currentWordIndex++;
+      currentLetterIndex = 0;
+      atWordEnd = false;
+      correctChars++; // count the space as a correct char
+      if (currentWordIndex >= words.length){
+        if (config.testType === 'words' || config.testType === 'quote'){
+          finishTest();
+          return;
+        } else {
+          extendWords();
+        }
+      }
+      positionCaret();
+      return;
+    }
+
+    const word = words[currentWordIndex];
+
+    // HARD/EXTREME MODE: occasionally fabricate a typo instead of the correct letter.
+    // Extreme rolls more often and pulls from a wider mix of typo types than hard.
+    // The letter shown is always the real one - only its color changes to red to mark
+    // it as mistyped, the same way a "double" or "swap" slip would still land on the
+    // right character but get flagged as wrong.
+    const mistakeChance = MISTAKE_CHANCE[config.difficulty] || 0;
+    if (currentLetterIndex < word.length && mistakeChance > 0 && Math.random() < mistakeChance){
+      const correctChar = word[currentLetterIndex];
+      const mistakeType = pickMistakeType();
+
+      const el = getLetterEl(currentWordIndex, currentLetterIndex);
+      if (el){
+        el.classList.add('incorrect');
+        el.classList.remove('correct');
+      }
+      pendingMistakes.set(mistakeKey(currentWordIndex, currentLetterIndex), {
+        wordIndex: currentWordIndex,
+        letterIndex: currentLetterIndex,
+        type: mistakeType
+      });
+      currentLetterIndex++;
+      incorrectChars++;
+      totalKeystrokes++;
+
+      // A mistake can land on the last letter of the word just like a correct keystroke
+      // can - make sure we flag word-end here too, or the next keystroke would try to
+      // read a letter slot past the end of the word.
+      if (currentLetterIndex >= word.length){
+        atWordEnd = true;
+        if ((config.testType === 'words' || config.testType === 'quote') &&
+            currentWordIndex >= words.length - 1){
+          positionCaret();
+          finishTest();
+          return;
+        }
+      }
+
+      // If the mistake landed on what would've been the last letter of the last word,
+      // don't auto-finish - let the user see/fix it like real typing.
+      positionCaret();
+      return;
+    }
+
+    const el = getLetterEl(currentWordIndex, currentLetterIndex);
+    if (el){
+      el.classList.add('correct');
+      el.classList.remove('incorrect');
+    }
+    currentLetterIndex++;
+    correctChars++;
+
+    if (currentLetterIndex >= word.length){
+      atWordEnd = true;
+      // If this was the last word in words/quote mode, finish immediately
+      // (no trailing space required), matching real Monkeytype behavior.
+      if ((config.testType === 'words' || config.testType === 'quote') &&
+          currentWordIndex >= words.length - 1){
+        positionCaret();
+        finishTest();
+        return;
+      }
+    }
+    positionCaret();
+  }
+
+  function extendWords(){
+    const more = buildWordStream(20, config.punctuation, config.numbers);
+    words = words.concat(more);
+    renderWords();
+    // re-mark already correct letters
+    reapplyCorrectMarks();
+  }
+
+  function reapplyCorrectMarks(){
+    for(let wi=0; wi<currentWordIndex; wi++){
+      const wordDiv = wordsEl.children[wi];
+      if (wordDiv) [...wordDiv.children].forEach(c=>c.classList.add('correct'));
+    }
+    if (currentWordIndex < wordsEl.children.length){
+      const wordDiv = wordsEl.children[currentWordIndex];
+      for(let li=0; li<currentLetterIndex; li++){
+        if (wordDiv.children[li]) wordDiv.children[li].classList.add('correct');
+      }
+    }
+    // Pending fabricated typos don't survive the innerHTML rebuild in renderWords(),
+    // so restore their red styling here (the glyphs themselves were never changed).
+    pendingMistakes.forEach(m=>{
+      const wordDiv = wordsEl.children[m.wordIndex];
+      const el = wordDiv ? wordDiv.children[m.letterIndex] : null;
+      if (el){
+        el.classList.remove('correct');
+        el.classList.add('incorrect');
+      }
+    });
+  }
+
+  function refreshLetterClasses(){
+    [...wordsEl.children].forEach((wordDiv, wi)=>{
+      [...wordDiv.children].forEach((letterEl, li)=>{
+        const isPendingMistake = pendingMistakes.has(mistakeKey(wi, li));
+        if (isPendingMistake){
+          // Always keep the fabricated typo visibly red until it's actually backspaced away.
+          letterEl.classList.add('incorrect');
+          letterEl.classList.remove('correct');
+          return;
+        }
+        const shouldBeCorrect = (wi < currentWordIndex) || (wi === currentWordIndex && li < currentLetterIndex);
+        letterEl.classList.toggle('correct', shouldBeCorrect);
+        letterEl.classList.remove('incorrect');
+      });
+    });
+    const w = words[currentWordIndex];
+    atWordEnd = !!(w && currentLetterIndex >= w.length && currentLetterIndex > 0);
+  }
+
+  // ============ TEST LIFECYCLE ============
+  function startTest(){
+    started = true;
+    startTime = Date.now();
+    topLine.classList.add('visible');
+    if (config.testType === 'time'){
+      timeRemaining = config.amount;
+      timerInterval = setInterval(tickTimer, 100);
+    } else if (config.testType === 'words'){
+      wordsModeTimer = setInterval(()=>{ /* just for live wpm sampling */ sampleStats(); }, 250);
+    }
+  }
+
+  function tickTimer(){
+    timeRemaining -= 0.1;
+    updateTopLineDisplay();
+    sampleStats();
+    if (timeRemaining <= 0){
+      finishTest();
+    }
+  }
+
+  function sampleStats(){
+    const elapsedSec = (Date.now() - startTime) / 1000;
+    const sec = Math.floor(elapsedSec);
+    if (sec !== lastSampleSecond && sec > 0){
+      lastSampleSecond = sec;
+      const wpm = computeLiveWpm();
+      wpmHistory.push({t: sec, wpm: wpm});
+      rawHistory.push({t: sec, wpm: wpm});
+    }
+  }
+
+  function finishTest(){
+    if (finished) return;
+    finished = true;
+    if (timerInterval) clearInterval(timerInterval);
+    if (wordsModeTimer) clearInterval(wordsModeTimer);
+
+    const totalElapsedSec = Math.max(1, (Date.now() - startTime) / 1000);
+    const chars = charsTypedSoFar();
+    const finalWpm = Math.round((chars/5) / (totalElapsedSec/60));
+
+    showResults(finalWpm, totalElapsedSec, chars);
+  }
+
+  // ============ RESULTS ============
+  function showResults(wpm, elapsedSec, chars){
+    typeStage.style.display = 'none';
+    resultsScreen.classList.add('visible');
+
+    const totalTyped = correctChars + incorrectChars;
+    const accPct = totalTyped > 0 ? Math.round((correctChars/totalTyped)*100) : 100;
+
+    document.getElementById('resWpm').textContent = wpm;
+    document.getElementById('resAcc').textContent = accPct + '%';
+    document.getElementById('resRaw').textContent = wpm; // raw approximates wpm here
+    document.getElementById('resConsistency').textContent = computeConsistency() + '%';
+    document.getElementById('resTime').textContent = Math.round(elapsedSec) + 's';
+    document.getElementById('resChars').textContent = `${chars}/${incorrectChars}/0/0`;
+    document.getElementById('resTestType').innerHTML =
+      (config.testType === 'time' ? `time ${config.amount}` : config.testType === 'words' ? `words ${config.amount}` : config.testType) +
+      `<br>english 1k`;
+
+    requestAnimationFrame(()=> drawChart(wpm));
+  }
+
+  function computeConsistency(){
+    if (wpmHistory.length < 2) return 100;
+    const vals = wpmHistory.map(h=>h.wpm);
+    const mean = vals.reduce((a,b)=>a+b,0)/vals.length;
+    const variance = vals.reduce((a,b)=>a+Math.pow(b-mean,2),0)/vals.length;
+    const stddev = Math.sqrt(variance);
+    const cv = mean > 0 ? stddev/mean : 0;
+    let consistency = Math.round(100 * (1 - Math.min(cv,1)));
+    return Math.max(70, Math.min(100, consistency + 15)); // fabricated but plausible & high
+  }
+
+  function drawChart(finalWpm){
+    const canvas = document.getElementById('wpmChart');
+    const dpr = window.devicePixelRatio || 1;
+    const rect = canvas.getBoundingClientRect();
+    canvas.width = rect.width * dpr;
+    canvas.height = rect.height * dpr;
+    const ctx = canvas.getContext('2d');
+    ctx.scale(dpr, dpr);
+    const W = rect.width, H = rect.height;
+    ctx.clearRect(0,0,W,H);
+
+    let data = wpmHistory.length ? wpmHistory.map(h=>h.wpm) : [finalWpm];
+    if (data.length === 1) data = [finalWpm, finalWpm];
+    const maxV = Math.max(...data, 10) * 1.15;
+    const minV = 0;
+    const padL = 34, padR = 10, padT = 10, padB = 24;
+    const plotW = W - padL - padR;
+    const plotH = H - padT - padB;
+
+    // grid lines
+    ctx.strokeStyle = 'rgba(255,255,255,0.06)';
+    ctx.lineWidth = 1;
+    const steps = 4;
+    ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--sub-color').trim();
+    ctx.font = '11px Roboto Mono, monospace';
+    for(let i=0;i<=steps;i++){
+      const y = padT + plotH - (plotH * i/steps);
+      ctx.beginPath();
+      ctx.moveTo(padL, y);
+      ctx.lineTo(W-padR, y);
+      ctx.stroke();
+      const val = Math.round(maxV * i/steps);
+      ctx.fillText(val, 4, y+4);
+    }
+
+    // line
+    const mainColor = getComputedStyle(document.documentElement).getPropertyValue('--main-color').trim();
+    ctx.strokeStyle = mainColor;
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    data.forEach((v, i)=>{
+      const x = padL + (plotW * i/(data.length-1));
+      const y = padT + plotH - (plotH * (v-minV)/(maxV-minV));
+      if (i===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
+    });
+    ctx.stroke();
+
+    // fill under line
+    ctx.lineTo(padL + plotW, padT + plotH);
+    ctx.lineTo(padL, padT + plotH);
+    ctx.closePath();
+    ctx.fillStyle = mainColor + '22';
+    ctx.fill();
+
+    // points
+    ctx.fillStyle = mainColor;
+    data.forEach((v,i)=>{
+      const x = padL + (plotW * i/(data.length-1));
+      const y = padT + plotH - (plotH * (v-minV)/(maxV-minV));
+      ctx.beginPath();
+      ctx.arc(x,y,2.5,0,Math.PI*2);
+      ctx.fill();
+    });
+  }
+
+  // ============ RESET / NEW TEST ============
+  function newTest(){
+    finished = false;
+    started = false;
+    startTime = null;
+    currentWordIndex = 0;
+    currentLetterIndex = 0;
+    atWordEnd = false;
+    totalKeystrokes = 0;
+    correctChars = 0;
+    incorrectChars = 0;
+    pendingMistakes.clear();
+    wpmHistory = [];
+    rawHistory = [];
+    lastSampleSecond = -1;
+    if (timerInterval) clearInterval(timerInterval);
+    if (wordsModeTimer) clearInterval(wordsModeTimer);
+    timeRemaining = config.amount;
+    scrollShiftPx = 0;
+    lineHeight = null;
+    wordsEl.style.transform = 'translateY(0)';
+
+    const wordCount = config.testType === 'time' ? Math.max(60, config.amount * 2) :
+                       config.testType === 'words' ? config.amount : 40;
+    words = buildWordStream(wordCount, config.punctuation, config.numbers);
+    renderWords();
+
+    resultsScreen.classList.remove('visible');
+    typeStage.style.display = 'flex';
+    topLine.classList.remove('visible');
+    updateTopLineDisplay();
+    timerDisplay.textContent = config.testType === 'time' ? config.amount : `0/${words.length}`;
+
+    wordsWrapper.focus();
+    positionCaret();
+  }
+
+  // ============ FOCUS HANDLING ============
+  function hideFocusWarning(){
+    focusWarning.classList.remove('visible');
+    wordsEl.classList.remove('blurred');
+    wordsWrapper.classList.remove('no-blink');
+  }
+  function showFocusWarning(){
+    if (finished) return;
+    focusWarning.classList.add('visible');
+    wordsEl.classList.add('blurred');
+  }
+
+  wordsWrapper.addEventListener('focus', hideFocusWarning);
+  wordsWrapper.addEventListener('blur', showFocusWarning);
+  wordsWrapper.addEventListener('click', ()=> wordsWrapper.focus());
+  focusWarning.addEventListener('click', ()=> wordsWrapper.focus());
+
+  let tabArmed = false; // true right after Tab is pressed, priming an Enter-to-confirm restart
+  function onKeyDown(e){
+    // Tab (optionally followed by Enter) restarts the test at any time, including
+    // after it's finished - this works even while IGNORED_KEYS/finished would
+    // otherwise block input, matching real Monkeytype's Tab / Tab+Enter shortcut.
+    if (e.key === 'Tab'){
+      e.preventDefault();
+      tabArmed = true;
+      newTest();
+      return;
+    }
+    if (e.key === 'Enter' && tabArmed){
+      e.preventDefault();
+      tabArmed = false;
+      newTest();
+      return;
+    }
+    tabArmed = false;
+
+    if (finished) return;
+    if (IGNORED_KEYS.has(e.key)) return;
+    if (e.key === ' ') e.preventDefault();
+    if (e.key === 'Backspace'){ e.preventDefault(); handleBackspace(e.ctrlKey || e.metaKey); return; }
+    if (e.key.length === 1 || e.key === ' '){
+      hideFocusWarning();
+      advanceOneCharV2();
+    }
+  }
+
+  document.addEventListener('keydown', function(e){
+    if (document.activeElement !== wordsWrapper && e.key !== 'Tab'){
+      wordsWrapper.focus();
+    }
+    onKeyDown(e);
+  });
+
+  restartBtn.addEventListener('click', newTest);
+  nextTestBtn.addEventListener('click', newTest);
+
+  // ============ CONFIG BAR INTERACTIONS ============
+  document.getElementById('punctBtn').addEventListener('click', function(){
+    config.punctuation = !config.punctuation;
+    this.classList.toggle('active', config.punctuation);
+    newTest();
+  });
+  document.getElementById('numBtn').addEventListener('click', function(){
+    config.numbers = !config.numbers;
+    this.classList.toggle('active', config.numbers);
+    newTest();
+  });
+  document.querySelectorAll('[data-difficulty]').forEach(btn=>{
+    btn.addEventListener('click', function(){
+      document.querySelectorAll('[data-difficulty]').forEach(b=>b.classList.remove('active'));
+      this.classList.add('active');
+      config.difficulty = this.dataset.difficulty;
+      newTest();
+    });
+  });
+  document.querySelectorAll('[data-testtype]').forEach(btn=>{
+    btn.addEventListener('click', function(){
+      document.querySelectorAll('[data-testtype]').forEach(b=>b.classList.remove('active'));
+      this.classList.add('active');
+      config.testType = this.dataset.testtype;
+      const amountGroup = document.getElementById('amountGroup');
+      if (config.testType === 'zen' || config.testType === 'quote'){
+        amountGroup.style.display = 'none';
+      } else {
+        amountGroup.style.display = 'flex';
+        // reset default amount buttons active state based on type
+      }
+      if (config.testType === 'words' && config.amount > 100) config.amount = 30;
+      newTest();
+    });
+  });
+  document.querySelectorAll('#amountGroup [data-amount]').forEach(btn=>{
+    btn.addEventListener('click', function(){
+      document.querySelectorAll('#amountGroup [data-amount]').forEach(b=>b.classList.remove('active'));
+      this.classList.add('active');
+      config.amount = parseInt(this.dataset.amount, 10);
+      newTest();
+    });
+  });
+
+  window.addEventListener('resize', ()=>{
+    lineHeight = null;
+    scrollShiftPx = 0;
+    wordsEl.style.transform = 'translateY(0)';
+    positionCaret();
+    if (resultsScreen.classList.contains('visible')){
+      const wpm = parseInt(document.getElementById('resWpm').textContent,10) || 0;
+      drawChart(wpm);
+    }
+  });
+
+  // ============ INIT ============
+  newTest();
+  wordsWrapper.focus();
+
+})();
+</script>
+</body>
+</html>
